@@ -33,16 +33,16 @@ CAMPAIGN_SLOTS = [
     },
     {
         "id": "campaign_2",
-        "title": "Кампанія 2 · обід старт",
-        "time_label": "12:00–13:59",
+        "title": "Кампанія 2 · обід",
+        "time_label": "12:00–14:49",
         "hour_start": 12,
-        "hour_end": 13,
+        "hour_end": 14,
     },
     {
         "id": "campaign_3",
         "title": "Кампанія 3 · день",
-        "time_label": "14:00–17:59",
-        "hour_start": 14,
+        "time_label": "15:00–17:59",
+        "hour_start": 15,
         "hour_end": 17,
     },
     {
@@ -201,7 +201,7 @@ def build_sunday_campaigns(couriers: pd.DataFrame, hourly: pd.DataFrame) -> dict
             "assignment_rule": (
                 "1 courier_id = 1 кампанія. Якщо є доставки в неділю за 4 тижні — "
                 "обовʼязково слот за типовою годиною DO (peak hour → "
-                "07–11 / 12–13 / 14–17 / 18–20 / 21–23). Без неділечних DO — "
+                "07–11 / 12–14 / 15–17 / 18–20 / 21–23). Без неділечних DO — "
                 "рівномірний розподіл між 5 слотами."
             ),
             "pool_size": int(len(pool)),
