@@ -148,10 +148,19 @@
 
   <p class="footnote" id="footnote"></p>
 
+  <hr style="border:0;border-top:1px solid var(--line);margin:36px 0 28px" />
+
+  <h1 style="font-size:20px;margin:0 0 6px">Неділя · 5 кампаній під грозу</h1>
+  <p class="sub" id="campaign-subtitle"></p>
+  <div class="meta-grid" id="campaign-meta-grid"></div>
+  <p class="section-title">Слоти часу (почергова активність)</p>
+  <div class="cohorts" id="campaign-cohorts"></div>
+  <p class="footnote" id="campaign-footnote"></p>
+
 <script id="report-data" type="application/json">__REPORT_DATA__</script>
 <script>
 const DATA = JSON.parse(document.getElementById("report-data").textContent);
-const { meta, cohorts, cohort_order } = DATA;
+const { meta, cohorts, cohort_order, sunday_campaigns: SC } = DATA;
 
 function pct(n, total) {
   if (!total) return "0%";
@@ -244,6 +253,73 @@ cohort_order.forEach(id => {
 
 document.getElementById("footnote").textContent =
   `${meta.active_definition} ${meta.delivery_window_note}`;
+
+if (SC) {
+  const cm = SC.meta;
+  document.getElementById("campaign-subtitle").textContent =
+    `${cm.purpose} · пул ${cm.pool_size.toLocaleString()} курʼєрів (неділя з онлайном/доставками) · ${cm.period_label}`;
+
+  [
+    ["У пулі (неділя)", cm.pool_size.toLocaleString()],
+    ["Призначено в 5 слотів", cm.assigned_to_slots.toLocaleString()],
+    ["Без слота", cm.unassigned_count.toLocaleString()],
+    ["Правило", "1 ID = 1 кампанія"],
+  ].forEach(([label, value]) => {
+    const el = document.createElement("div");
+    el.className = "meta";
+    el.innerHTML = `<div class="label">${label}</div><div class="value" style="font-size:14px">${value}</div>`;
+    document.getElementById("campaign-meta-grid").appendChild(el);
+  });
+
+  const campRoot = document.getElementById("campaign-cohorts");
+  const campById = Object.fromEntries(SC.campaigns.map(c => [c.id, c]));
+
+  function downloadCampaignCsv(c) {
+    const rows = ["courier_id", ...c.courier_ids.map(String)];
+    const blob = new Blob([rows.join("\n") + "\n"], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `kyiv_sunday_${c.id}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  SC.campaign_order.forEach(id => {
+    const c = campById[id];
+    if (!c) return;
+    const s = c.summary;
+    const card = document.createElement("article");
+    card.className = "cohort";
+    card.style.borderColor = "var(--accent-2)";
+    card.innerHTML = `
+      <div class="cohort-head">
+        <h2>${c.title}</h2>
+        <span class="count">${c.time_label} · ${c.count.toLocaleString()}</span>
+      </div>
+      <p class="desc">${c.description}</p>
+      <div class="windows">
+        <div><strong>З weekend-когорт:</strong>
+          regular_both ${s.from_regular_both} · regular_sunday ${s.from_regular_sunday} ·
+          mixed ${s.from_mixed_occasional} · occasional_sunday ${s.from_occasional_sunday}
+        </div>
+        <div style="margin-top:4px"><strong>Призначення:</strong>
+          за доставками ${s.delivery_based} · лише онлайн (рівномірно) ${s.online_only_balanced}
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn" type="button">Завантажити courier_id для кампанії (.csv)</button>
+      </div>
+    `;
+    card.querySelector(".btn").addEventListener("click", () => downloadCampaignCsv(c));
+    campRoot.appendChild(card);
+  });
+
+  document.getElementById("campaign-footnote").textContent =
+    `${cm.pool_definition} ${cm.assignment_rule}`;
+}
 </script>
 </body>
 </html>

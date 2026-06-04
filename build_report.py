@@ -7,7 +7,9 @@ from pathlib import Path
 
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+_RP_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(_RP_DIR))
+sys.path.insert(1, str(_RP_DIR.parent))
 from dbx import DBX
 
 CSV_PATH = Path(
@@ -331,15 +333,23 @@ def embed_json_in_html(report: dict) -> None:
 
 
 def main() -> None:
+    from build_sunday_campaigns import (
+        build_sunday_campaigns,
+        fetch_sunday_hourly_deliveries,
+    )
+
     courier_df = load_courier_ids()
     print(f"Loaded {len(courier_df)} active Kyiv couriers from CSV")
 
+    ids = set(courier_df["Courier ID"].tolist())
     with DBX() as dbx:
         daily = fetch_daily(dbx)
         hours = fetch_delivery_hours(dbx)
+        hourly = fetch_sunday_hourly_deliveries(dbx, ids)
 
     couriers = aggregate_couriers(courier_df, daily, hours)
     report = build_report(couriers)
+    report["sunday_campaigns"] = build_sunday_campaigns(couriers, hourly)
 
     OUT_JSON.write_text(
         json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"

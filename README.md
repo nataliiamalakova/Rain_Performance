@@ -39,11 +39,29 @@
 ## Оновлення
 
 ```bash
-cd "/Users/nataliia.malakovabolt.eu/Downloads/Session with Jakub H."
-./.venv/bin/python3 Rain_Performance/build_report.py
+cd "/Users/nataliia.malakovabolt.eu/Downloads/Session with Jakub H./Rain_Performance"
+../.venv/bin/python3 build_report.py
 ```
 
 Потрібен `.env` з Databricks token у корені workspace (див. `dbx.py`).
+
+## Неділя · 5 кампаній під грозу
+
+У нижній частині `index.html` — **5 слотів** для почергової активності в неділю:
+
+| Кампанія | Час |
+|---|---|
+| 1 | 07:00–11:59 |
+| 2 | 12:00–13:59 |
+| 3 | 14:00–17:59 |
+| 4 | 18:00–20:59 |
+| 5 | 21:00–23:59 |
+
+**Пул:** курʼєри з попереднього звіту, які мали онлайн або доставки в неділю (без `no_weekend` / `occasional_saturday`).
+
+**Призначення:** один `courier_id` = одна кампанія. Якщо є історія доставок у неділю — слот з найбільшою кількістю DO; якщо лише онлайн без DO — рівномірний розподіл між 5 слотами.
+
+Окремий скрипт: `build_sunday_campaigns.py`.
 
 ## GitHub Pages
 
