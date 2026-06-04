@@ -1,4 +1,4 @@
-"""Assign Sunday-active couriers to 5 rain-campaign time slots (exclusive)."""
+"""Assign ALL Kyiv couriers to 5 Sunday rain-campaign time slots (exclusive)."""
 from __future__ import annotations
 
 import json
@@ -22,8 +22,6 @@ from build_report import (
 
 OUT_DIR = Path(__file__).parent
 OUT_JSON = OUT_DIR / "sunday_campaigns.json"
-
-SUNDAY_POOL_EXCLUDE = {"no_weekend", "occasional_saturday"}
 
 CAMPAIGN_SLOTS = [
     {
@@ -64,15 +62,17 @@ CAMPAIGN_SLOTS = [
 ]
 
 
-def hour_to_slot(h: int) -> str | None:
+def hour_to_slot(h: int) -> str:
+    """Map delivery hour to campaign slot (inclusive ranges)."""
+    if h < 7:
+        return "campaign_1"
     for slot in CAMPAIGN_SLOTS:
         if slot["hour_start"] <= h <= slot["hour_end"]:
             return slot["id"]
-    return None
+    return "campaign_5"
 
 
 def fetch_sunday_hourly_deliveries(dbx: DBX, courier_ids: set[int]) -> pd.DataFrame:
-    """Per courier × hour delivery counts on Sundays."""
     q = f"""
     SELECT
       courier_id,
@@ -90,49 +90,43 @@ def fetch_sunday_hourly_deliveries(dbx: DBX, courier_ids: set[int]) -> pd.DataFr
     return df[df["courier_id"].isin(courier_ids)].copy()
 
 
-def assign_primary_slot(hourly: pd.DataFrame, courier_id: int) -> tuple[str, str]:
-    """Pick slot with most Sunday deliveries; tie-break by median hour."""
+def sunday_peak_hour(sub: pd.DataFrame) -> int:
+    """Typical Sunday delivery hour: mode hour, tie-break weighted average."""
+    sub = sub.copy()
+    sub["hour"] = sub["hour"].astype(int)
+    sub["deliveries"] = sub["deliveries"].astype(int)
+    max_del = sub["deliveries"].max()
+    peaks = sub.loc[sub["deliveries"] == max_del, "hour"]
+    if len(peaks) == 1:
+        return int(peaks.iloc[0])
+    weighted = (sub["hour"] * sub["deliveries"]).sum() / sub["deliveries"].sum()
+    return int(round(weighted))
+
+
+def assign_by_sunday_peak(
+    hourly: pd.DataFrame, courier_id: int
+) -> tuple[str, int, str] | tuple[None, None, None]:
     sub = hourly[hourly["courier_id"] == courier_id]
     if sub.empty:
-        return "campaign_unassigned", "no_sunday_deliveries"
-
-    sub = sub.copy()
-    sub["slot"] = sub["hour"].astype(int).map(hour_to_slot)
-    sub = sub.dropna(subset=["slot"])
-    if sub.empty:
-        return "campaign_unassigned", "hours_outside_slots"
-
-    slot_counts = sub.groupby("slot")["deliveries"].sum()
-    best = slot_counts.idxmax()
-    if slot_counts.max() == slot_counts.min() and len(slot_counts) > 1:
-        weighted = sum(int(r.hour) * int(r.deliveries) for r in sub.itertuples())
-        total = int(sub["deliveries"].sum())
-        median_h = weighted // max(total, 1)
-        fallback = hour_to_slot(median_h)
-        if fallback:
-            best = fallback
-    return best, "delivery_weighted"
+        return None, None, None
+    peak_h = sunday_peak_hour(sub)
+    slot_id = hour_to_slot(peak_h)
+    return slot_id, peak_h, "sunday_peak_hour"
 
 
 def build_sunday_campaigns(couriers: pd.DataFrame, hourly: pd.DataFrame) -> dict:
-    pool = couriers[~couriers["cohort"].isin(SUNDAY_POOL_EXCLUDE)].copy()
-    pool = pool[
-        (pool["sun_active_weeks"] >= 1) | (pool["sun_delivery_count"] > 0)
-    ].copy()
+    """All couriers in exactly one slot. Sunday DO history → mandatory hour slot."""
+    pool = couriers.copy()
+    slot_ids = [s["id"] for s in CAMPAIGN_SLOTS]
 
     assignments = []
     for _, row in pool.iterrows():
         cid = int(row["courier_id"])
-        if row["sun_delivery_count"] > 0 and not hourly[hourly["courier_id"] == cid].empty:
-            slot_id, method = assign_primary_slot(hourly, cid)
-        elif row["sun_active_weeks"] >= 1 and pd.notna(row.get("sun_min_hour")):
-            lo, hi = int(row["sun_min_hour"]), int(row["sun_max_hour"])
-            mid = (lo + hi) // 2
-            slot_id = hour_to_slot(mid) or "campaign_unassigned"
-            method = "online_window_midpoint"
-        else:
-            slot_id = "campaign_unassigned"
-            method = "online_only_no_hour"
+        slot_id, peak_h, method = assign_by_sunday_peak(hourly, cid)
+        if slot_id is None:
+            slot_id = "pending_balanced"
+            peak_h = None
+            method = "no_sunday_history"
 
         assignments.append(
             {
@@ -140,6 +134,7 @@ def build_sunday_campaigns(couriers: pd.DataFrame, hourly: pd.DataFrame) -> dict
                 "weekend_cohort": row["cohort"],
                 "campaign_slot": slot_id,
                 "assignment_method": method,
+                "sunday_peak_hour": peak_h,
                 "sun_delivery_window": row.get("sun_delivery_window"),
                 "sun_active_weeks": int(row["sun_active_weeks"]),
             }
@@ -147,69 +142,71 @@ def build_sunday_campaigns(couriers: pd.DataFrame, hourly: pd.DataFrame) -> dict
 
     assign_df = pd.DataFrame(assignments)
 
-    unassigned_mask = assign_df["campaign_slot"] == "campaign_unassigned"
-    fallback_idx = assign_df.index[unassigned_mask]
-    fallback_sorted = assign_df.loc[fallback_idx].sort_values("courier_id")
-    slot_ids = [s["id"] for s in CAMPAIGN_SLOTS]
-    for i, orig_idx in enumerate(fallback_sorted.index):
+    pending_mask = assign_df["campaign_slot"] == "pending_balanced"
+    pending_idx = assign_df.index[pending_mask]
+    pending_sorted = assign_df.loc[pending_idx].sort_values("courier_id")
+    for i, orig_idx in enumerate(pending_sorted.index):
         assign_df.at[orig_idx, "campaign_slot"] = slot_ids[i % len(slot_ids)]
-        assign_df.at[orig_idx, "assignment_method"] = "online_only_balanced"
+        assign_df.at[orig_idx, "assignment_method"] = "no_sunday_history_balanced"
 
-    slot_defs = {s["id"]: s for s in CAMPAIGN_SLOTS}
     campaigns = []
-
     for slot in CAMPAIGN_SLOTS:
         sid = slot["id"]
         subset = assign_df[assign_df["campaign_slot"] == sid]
+        peak_subset = subset[subset["assignment_method"] == "sunday_peak_hour"]
         campaigns.append(
             {
                 "id": sid,
                 "title": slot["title"],
                 "time_label": slot["time_label"],
                 "description": (
-                    f"Курʼєри, у яких більшість неділечних доставок за останні "
-                    f"4 неділі припадає на {slot['time_label']}. "
-                    f"Кожен courier_id у рівно одній кампанії (без дублікатів)."
+                    f"Усі активні курʼєри Kyiv, розбиті на 5 кампаній. "
+                    f"Курʼєри з неділечними доставками потрапляють сюди за "
+                    f"типовою годиною DO (напр. 18:00 → {slot['time_label']}). "
+                    f"Решта — рівномірний розподіл без історії неділечних DO."
                 ),
                 "count": int(len(subset)),
                 "courier_ids": subset["courier_id"].astype(int).tolist(),
                 "summary": {
+                    "sunday_peak_hour_assigned": int(len(peak_subset)),
+                    "no_sunday_history_balanced": int(
+                        (subset["assignment_method"] == "no_sunday_history_balanced").sum()
+                    ),
                     "from_regular_both": int(
                         (subset["weekend_cohort"] == "regular_both").sum()
                     ),
                     "from_regular_sunday": int(
                         (subset["weekend_cohort"] == "regular_sunday").sum()
                     ),
-                    "from_mixed_occasional": int(
-                        (subset["weekend_cohort"] == "mixed_occasional").sum()
-                    ),
-                    "from_occasional_sunday": int(
-                        (subset["weekend_cohort"] == "occasional_sunday").sum()
-                    ),
-                    "delivery_based": int(
-                        (subset["assignment_method"] == "delivery_weighted").sum()
-                    ),
-                    "online_only_balanced": int(
-                        (subset["assignment_method"] == "online_only_balanced").sum()
+                    "from_no_weekend": int(
+                        (subset["weekend_cohort"] == "no_weekend").sum()
                     ),
                 },
             }
         )
 
+    peak_total = int(
+        (assign_df["assignment_method"] == "sunday_peak_hour").sum()
+    )
+    balanced_total = int(
+        (assign_df["assignment_method"] == "no_sunday_history_balanced").sum()
+    )
+
     return {
         "meta": {
-            "purpose": "5 кампаній на неділю під грозу — почергова активність по слотах",
+            "purpose": "5 кампаній на неділю під грозу — усі курʼєри Kyiv з W23 CSV",
             "pool_definition": (
-                "Усі з попереднього звіту, хто мав онлайн або доставки в неділю "
-                "(виключено no_weekend та occasional_saturday)."
+                "Усі 13 167 active Kyiv couriers з W23 CSV (dim_courier verified)."
             ),
             "assignment_rule": (
-                "Один слот на курʼєра: слот з найбільшою кількістю доставок у неділю; "
-                "якщо доставок немає (лише онлайн) — рівномірний розподіл між 5 слотами."
+                "1 courier_id = 1 кампанія. Якщо є доставки в неділю за 4 тижні — "
+                "обовʼязково слот за типовою годиною DO (peak hour → "
+                "07–11 / 12–13 / 14–17 / 18–20 / 21–23). Без неділечних DO — "
+                "рівномірний розподіл між 5 слотами."
             ),
             "pool_size": int(len(pool)),
-            "assigned_to_slots": int(len(assign_df)),
-            "unassigned_count": 0,
+            "sunday_peak_hour_assigned": peak_total,
+            "no_sunday_history_balanced": balanced_total,
             "period_label": f"{START} — {END}",
         },
         "campaign_order": [s["id"] for s in CAMPAIGN_SLOTS],
@@ -230,10 +227,14 @@ def main() -> None:
     report = build_sunday_campaigns(couriers, hourly)
     OUT_JSON.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"Wrote {OUT_JSON}")
-    print(f"Pool: {report['meta']['pool_size']}")
+    m = report["meta"]
+    print(f"Pool: {m['pool_size']} | peak-hour: {m['sunday_peak_hour_assigned']} | balanced: {m['no_sunday_history_balanced']}")
     for c in report["campaigns"]:
-        print(f"  {c['id']} {c['time_label']}: {c['count']}")
-    print(f"  unassigned: {report['meta'].get('unassigned_count', 0)}")
+        s = c["summary"]
+        print(
+            f"  {c['id']} {c['time_label']}: {c['count']} "
+            f"(peak={s['sunday_peak_hour_assigned']}, rest={s['no_sunday_history_balanced']})"
+        )
 
 
 if __name__ == "__main__":

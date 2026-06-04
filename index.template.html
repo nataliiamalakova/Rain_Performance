@@ -260,10 +260,10 @@ if (SC) {
     `${cm.purpose} · пул ${cm.pool_size.toLocaleString()} курʼєрів (неділя з онлайном/доставками) · ${cm.period_label}`;
 
   [
-    ["У пулі (неділя)", cm.pool_size.toLocaleString()],
-    ["Призначено в 5 слотів", cm.assigned_to_slots.toLocaleString()],
-    ["Без слота", cm.unassigned_count.toLocaleString()],
-    ["Правило", "1 ID = 1 кампанія"],
+    ["У пулі (усі Kyiv)", cm.pool_size.toLocaleString()],
+    ["За годиною DO в неділю", (cm.sunday_peak_hour_assigned || 0).toLocaleString()],
+    ["Без неділечних DO", (cm.no_sunday_history_balanced || 0).toLocaleString()],
+    ["Правило", "peak hour → слот"],
   ].forEach(([label, value]) => {
     const el = document.createElement("div");
     el.className = "meta";
@@ -306,7 +306,7 @@ if (SC) {
           mixed ${s.from_mixed_occasional} · occasional_sunday ${s.from_occasional_sunday}
         </div>
         <div style="margin-top:4px"><strong>Призначення:</strong>
-          за доставками ${s.delivery_based} · лише онлайн (рівномірно) ${s.online_only_balanced}
+          за типовою годиною DO ${s.sunday_peak_hour_assigned} · без неділечних DO ${s.no_sunday_history_balanced}
         </div>
       </div>
       <div class="actions">
