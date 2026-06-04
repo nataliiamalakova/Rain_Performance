@@ -30,51 +30,50 @@ REGULAR_THRESHOLD = 3
 COHORTS = [
     {
         "id": "regular_both",
-        "title": "Зазвичай обидва вихідні",
+        "title": "Usually both weekend days",
         "description": (
-            "Онлайн ≥3 з 4 субот і ≥3 з 4 неділь "
+            "Online ≥3 of 4 Saturdays and ≥3 of 4 Sundays "
             "(courier_total_online_hours > 0)."
         ),
     },
     {
         "id": "regular_saturday",
-        "title": "Зазвичай лише субота",
+        "title": "Usually Saturday only",
         "description": (
-            "Онлайн ≥3 з 4 субот і ≤1 неділя з онлайн-активністю."
+            "Online ≥3 of 4 Saturdays and ≤1 Sunday with online activity."
         ),
     },
     {
         "id": "regular_sunday",
-        "title": "Зазвичай лише неділя",
+        "title": "Usually Sunday only",
         "description": (
-            "Онлайн ≥3 з 4 неділь і ≤1 субота з онлайн-активністю."
+            "Online ≥3 of 4 Sundays and ≤1 Saturday with online activity."
         ),
     },
     {
         "id": "mixed_occasional",
-        "title": "Іноді обидва вихідні",
+        "title": "Occasionally both weekend days",
         "description": (
-            "Був онлайн і в суботу, і в неділю, але без стабільного "
-            "«зазвичай» патерну (1–2 активні тижні на день або "
-            "нерегулярна комбінація)."
+            "Online on both Saturday and Sunday, but no stable "
+            "“regular” pattern (1–2 active weeks per day or irregular mix)."
         ),
     },
     {
         "id": "occasional_saturday",
-        "title": "Іноді лише субота",
-        "description": "1–2 суботи з онлайн-активністю, неділі без онлайну.",
+        "title": "Occasionally Saturday only",
+        "description": "1–2 Saturdays with online activity, no Sunday online.",
     },
     {
         "id": "occasional_sunday",
-        "title": "Іноді лише неділя",
-        "description": "1–2 неділі з онлайн-активністю, суботи без онлайну.",
+        "title": "Occasionally Sunday only",
+        "description": "1–2 Sundays with online activity, no Saturday online.",
     },
     {
         "id": "no_weekend",
-        "title": "Зазвичай не працює у вихідні",
+        "title": "Usually no weekend work",
         "description": (
-            "0 субот і 0 неділь з courier_total_online_hours > 0 "
-            "за останні 4 тижні вихідних."
+            "0 Saturdays and 0 Sundays with courier_total_online_hours > 0 "
+            "over the last 4 weekend weeks."
         ),
     },
 ]
@@ -299,13 +298,13 @@ def build_report(couriers: pd.DataFrame) -> dict:
             "regular_threshold_weeks": REGULAR_THRESHOLD,
             "total_couriers": int(len(couriers)),
             "active_definition": (
-                "Курʼєри з CSV (Status=active, City=Kyiv), підтверджені в "
+                "Couriers from CSV (Status=active, City=Kyiv), verified in "
                 "dim_courier (status=active, city_id=158)."
             ),
             "online_active_definition": "courier_total_online_hours > 0",
             "delivery_window_note": (
-                "Проміжок доби — min/max година (HOUR(order_created_at_local)) "
-                "доставлених ордерів у відповідний день тижня за 4 вихідні."
+                "Time window = min/max hour (HOUR(order_created_at_local)) "
+                "of delivered orders on that weekday over 4 weekend weeks."
             ),
         },
         "cohorts": cohort_payload,

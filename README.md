@@ -1,57 +1,30 @@
 # Rain Performance
 
-Інтерактивний звіт по **патернах роботи курʼєрів Kyiv у вихідні** (субота / неділя) за останні 4 тижні.
+Interactive report on **Kyiv courier weekend work patterns** (Saturday / Sunday) over the last 4 weeks.
 
 **Live dashboard:** https://nataliiamalakova.github.io/Rain_Performance/
 
-## Період
+## Period
 
-- **Суботи:** 2026-05-10, 2026-05-17, 2026-05-24, 2026-05-31
-- **Неділі:** 2026-05-11, 2026-05-18, 2026-05-25, 2026-06-01
-- **Вибірка:** 13 167 активних курʼєрів з `W23 - Kyiv ENG.csv` (підтверджено в `dim_courier`, city_id=158)
+- **Saturdays:** 2026-05-10, 2026-05-17, 2026-05-24, 2026-05-31
+- **Sundays:** 2026-05-11, 2026-05-18, 2026-05-25, 2026-06-01
+- **Sample:** 13,167 active couriers from `W23 - Kyiv ENG.csv` (verified in `dim_courier`, city_id=158)
 
-## Метрики
+## Metrics
 
-| Метрика | Джерело |
+| Metric | Source |
 |---|---|
 | Courier Online Hours | `fact_courier_daily_v2.courier_total_online_hours` |
 | Courier Delivered Orders | `fact_courier_daily_v2.courier_delivered_orders_count` |
-| Проміжок доби доставок | `HOUR(order_created_at_local)` (min–max по суботі / неділі) |
+| Delivery time window | `HOUR(order_created_at_local)` (min–max per Sat / Sun) |
 
-**Активний день** = `courier_total_online_hours > 0`.
+**Active day** = `courier_total_online_hours > 0`.
 
-**«Зазвичай»** = онлайн ≥3 з 4 відповідних вихідних.
+**“Regular”** = online on ≥3 of 4 corresponding weekend days.
 
-## Когорти
+## Sunday · 5 storm campaigns (main view)
 
-1. **Зазвичай обидва вихідні** — ≥3 субот і ≥3 неділь
-2. **Зазвичай лише субота** — ≥3 субот, ≤1 неділя
-3. **Зазвичай лише неділя** — ≥3 неділь, ≤1 субота
-4. **Іноді обидва вихідні** — активність в обидва дні, без стабільного патерну
-5. **Іноді лише субота** — 1–2 суботи, без неділь
-6. **Іноді лише неділя** — 1–2 неділі, без субот
-7. **Зазвичай не працює у вихідні** — 0 субот і 0 неділь з онлайном
-
-## Файли
-
-- `index.html` — інтерактивний звіт (кнопка завантаження CSV по кожній когорті)
-- `report_data.json` — сирі дані для звіту
-- `build_report.py` — збір даних з Databricks + CSV
-
-## Оновлення
-
-```bash
-cd "/Users/nataliia.malakovabolt.eu/Downloads/Session with Jakub H./Rain_Performance"
-../.venv/bin/python3 build_report.py
-```
-
-Потрібен `.env` з Databricks token у корені workspace (див. `dbx.py`).
-
-## Неділя · 5 кампаній під грозу
-
-У нижній частині `index.html` — **5 слотів** для почергової активності в неділю:
-
-| Кампанія | Час |
+| Campaign | Time |
 |---|---|
 | 1 | 07:00–11:59 |
 | 2 | 12:00–14:49 |
@@ -59,17 +32,40 @@ cd "/Users/nataliia.malakovabolt.eu/Downloads/Session with Jakub H./Rain_Perform
 | 4 | 18:00–20:59 |
 | 5 | 21:00–23:59 |
 
-**Пул:** усі **13 167** active Kyiv couriers з W23 CSV.
+**Pool:** all **13,167** active Kyiv couriers from W23 CSV.
 
-**Призначення:** один `courier_id` = одна кампанія.
+**Assignment:** one `courier_id` = one campaign.
 
-- Є доставки в неділю за 4 тижні → **обовʼязково** слот за типовою годиною DO (peak hour: напр. 18:00 → кампанія 4, 18:00–20:59).
-- Немає неділечних DO → рівномірний розподіл між 5 слотами.
+- Sunday deliveries over 4 weeks → **mandatory** slot by typical DO peak hour (e.g. 18:00 → campaign 4).
+- No Sunday DO history → even split across 5 slots.
 
-Окремий скрипт: `build_sunday_campaigns.py`.
+## Weekend cohorts (collapsed section)
+
+1. **Usually both weekend days**
+2. **Usually Saturday only**
+3. **Usually Sunday only**
+4. **Occasionally both weekend days**
+5. **Occasionally Saturday only**
+6. **Occasionally Sunday only**
+7. **Usually no weekend work**
+
+## Files
+
+- `index.html` — interactive report (CSV download per cohort / campaign)
+- `report_data.json` — report data
+- `build_report.py` — Databricks + CSV pipeline
+- `build_sunday_campaigns.py` — Sunday campaign slot assignment
+
+## Refresh
+
+```bash
+cd "/Users/nataliia.malakovabolt.eu/Downloads/Session with Jakub H./Rain_Performance"
+../.venv/bin/python3 build_report.py
+git push
+```
+
+Requires `.env` with Databricks token in the workspace root (see `dbx.py`).
 
 ## GitHub Pages
 
-Live: **https://nataliiamalakova.github.io/Rain_Performance/** (гілка `main`, root).
-
-Після `build_report.py` зробіть `git push` — сторінка оновиться за ~1 хв.
+Live: **https://nataliiamalakova.github.io/Rain_Performance/** (branch `main`, root).

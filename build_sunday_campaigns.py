@@ -26,35 +26,35 @@ OUT_JSON = OUT_DIR / "sunday_campaigns.json"
 CAMPAIGN_SLOTS = [
     {
         "id": "campaign_1",
-        "title": "Кампанія 1 · ранок",
+        "title": "Campaign 1 · morning",
         "time_label": "07:00–11:59",
         "hour_start": 7,
         "hour_end": 11,
     },
     {
         "id": "campaign_2",
-        "title": "Кампанія 2 · обід",
+        "title": "Campaign 2 · lunch",
         "time_label": "12:00–14:49",
         "hour_start": 12,
         "hour_end": 14,
     },
     {
         "id": "campaign_3",
-        "title": "Кампанія 3 · день",
+        "title": "Campaign 3 · afternoon",
         "time_label": "15:00–17:59",
         "hour_start": 15,
         "hour_end": 17,
     },
     {
         "id": "campaign_4",
-        "title": "Кампанія 4 · вечір",
+        "title": "Campaign 4 · evening",
         "time_label": "18:00–20:59",
         "hour_start": 18,
         "hour_end": 20,
     },
     {
         "id": "campaign_5",
-        "title": "Кампанія 5 · пізній вечір",
+        "title": "Campaign 5 · late evening",
         "time_label": "21:00–23:59",
         "hour_start": 21,
         "hour_end": 23,
@@ -160,10 +160,10 @@ def build_sunday_campaigns(couriers: pd.DataFrame, hourly: pd.DataFrame) -> dict
                 "title": slot["title"],
                 "time_label": slot["time_label"],
                 "description": (
-                    f"Усі активні курʼєри Kyiv, розбиті на 5 кампаній. "
-                    f"Курʼєри з неділечними доставками потрапляють сюди за "
-                    f"типовою годиною DO (напр. 18:00 → {slot['time_label']}). "
-                    f"Решта — рівномірний розподіл без історії неділечних DO."
+                    f"All active Kyiv couriers split across 5 campaigns. "
+                    f"Couriers with Sunday deliveries are assigned by typical DO hour "
+                    f"(e.g. 18:00 → {slot['time_label']}). "
+                    f"Others are evenly distributed (no Sunday DO history)."
                 ),
                 "count": int(len(subset)),
                 "courier_ids": subset["courier_id"].astype(int).tolist(),
@@ -194,15 +194,15 @@ def build_sunday_campaigns(couriers: pd.DataFrame, hourly: pd.DataFrame) -> dict
 
     return {
         "meta": {
-            "purpose": "5 кампаній на неділю під грозу — усі курʼєри Kyiv з W23 CSV",
+            "purpose": "5 Sunday storm campaigns — all Kyiv couriers from W23 CSV",
             "pool_definition": (
-                "Усі 13 167 active Kyiv couriers з W23 CSV (dim_courier verified)."
+                "All 13,167 active Kyiv couriers from W23 CSV (dim_courier verified)."
             ),
             "assignment_rule": (
-                "1 courier_id = 1 кампанія. Якщо є доставки в неділю за 4 тижні — "
-                "обовʼязково слот за типовою годиною DO (peak hour → "
-                "07–11 / 12–14 / 15–17 / 18–20 / 21–23). Без неділечних DO — "
-                "рівномірний розподіл між 5 слотами."
+                "1 courier_id = 1 campaign. If Sunday deliveries exist over 4 weeks — "
+                "mandatory slot by typical DO peak hour ("
+                "07–11 / 12–14 / 15–17 / 18–20 / 21–23). "
+                "No Sunday DO history — even split across 5 slots."
             ),
             "pool_size": int(len(pool)),
             "sunday_peak_hour_assigned": peak_total,

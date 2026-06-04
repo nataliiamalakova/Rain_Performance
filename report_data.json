@@ -19,15 +19,15 @@
     ],
     "regular_threshold_weeks": 3,
     "total_couriers": 13167,
-    "active_definition": "Курʼєри з CSV (Status=active, City=Kyiv), підтверджені в dim_courier (status=active, city_id=158).",
+    "active_definition": "Couriers from CSV (Status=active, City=Kyiv), verified in dim_courier (status=active, city_id=158).",
     "online_active_definition": "courier_total_online_hours > 0",
-    "delivery_window_note": "Проміжок доби — min/max година (HOUR(order_created_at_local)) доставлених ордерів у відповідний день тижня за 4 вихідні."
+    "delivery_window_note": "Time window = min/max hour (HOUR(order_created_at_local)) of delivered orders on that weekday over 4 weekend weeks."
   },
   "cohorts": [
     {
       "id": "regular_both",
-      "title": "Зазвичай обидва вихідні",
-      "description": "Онлайн ≥3 з 4 субот і ≥3 з 4 неділь (courier_total_online_hours > 0).",
+      "title": "Usually both weekend days",
+      "description": "Online ≥3 of 4 Saturdays and ≥3 of 4 Sundays (courier_total_online_hours > 0).",
       "count": 415,
       "courier_ids": [
         1747985,
@@ -459,8 +459,8 @@
     },
     {
       "id": "regular_saturday",
-      "title": "Зазвичай лише субота",
-      "description": "Онлайн ≥3 з 4 субот і ≤1 неділя з онлайн-активністю.",
+      "title": "Usually Saturday only",
+      "description": "Online ≥3 of 4 Saturdays and ≤1 Sunday with online activity.",
       "count": 34,
       "courier_ids": [
         1657869,
@@ -511,8 +511,8 @@
     },
     {
       "id": "regular_sunday",
-      "title": "Зазвичай лише неділя",
-      "description": "Онлайн ≥3 з 4 неділь і ≤1 субота з онлайн-активністю.",
+      "title": "Usually Sunday only",
+      "description": "Online ≥3 of 4 Sundays and ≤1 Saturday with online activity.",
       "count": 175,
       "courier_ids": [
         959413,
@@ -704,8 +704,8 @@
     },
     {
       "id": "mixed_occasional",
-      "title": "Іноді обидва вихідні",
-      "description": "Був онлайн і в суботу, і в неділю, але без стабільного «зазвичай» патерну (1–2 активні тижні на день або нерегулярна комбінація).",
+      "title": "Occasionally both weekend days",
+      "description": "Online on both Saturday and Sunday, but no stable “regular” pattern (1–2 active weeks per day or irregular mix).",
       "count": 1448,
       "courier_ids": [
         1898252,
@@ -2170,8 +2170,8 @@
     },
     {
       "id": "occasional_saturday",
-      "title": "Іноді лише субота",
-      "description": "1–2 суботи з онлайн-активністю, неділі без онлайну.",
+      "title": "Occasionally Saturday only",
+      "description": "1–2 Saturdays with online activity, no Sunday online.",
       "count": 566,
       "courier_ids": [
         2138048,
@@ -2754,8 +2754,8 @@
     },
     {
       "id": "occasional_sunday",
-      "title": "Іноді лише неділя",
-      "description": "1–2 неділі з онлайн-активністю, суботи без онлайну.",
+      "title": "Occasionally Sunday only",
+      "description": "1–2 Sundays with online activity, no Saturday online.",
       "count": 708,
       "courier_ids": [
         1118241,
@@ -3480,8 +3480,8 @@
     },
     {
       "id": "no_weekend",
-      "title": "Зазвичай не працює у вихідні",
-      "description": "0 субот і 0 неділь з courier_total_online_hours > 0 за останні 4 тижні вихідних.",
+      "title": "Usually no weekend work",
+      "description": "0 Saturdays and 0 Sundays with courier_total_online_hours > 0 over the last 4 weekend weeks.",
       "count": 9821,
       "courier_ids": [
         2138071,
@@ -13329,9 +13329,9 @@
   ],
   "sunday_campaigns": {
     "meta": {
-      "purpose": "5 кампаній на неділю під грозу — усі курʼєри Kyiv з W23 CSV",
-      "pool_definition": "Усі 13 167 active Kyiv couriers з W23 CSV (dim_courier verified).",
-      "assignment_rule": "1 courier_id = 1 кампанія. Якщо є доставки в неділю за 4 тижні — обовʼязково слот за типовою годиною DO (peak hour → 07–11 / 12–14 / 15–17 / 18–20 / 21–23). Без неділечних DO — рівномірний розподіл між 5 слотами.",
+      "purpose": "5 Sunday storm campaigns — all Kyiv couriers from W23 CSV",
+      "pool_definition": "All 13,167 active Kyiv couriers from W23 CSV (dim_courier verified).",
+      "assignment_rule": "1 courier_id = 1 campaign. If Sunday deliveries exist over 4 weeks — mandatory slot by typical DO peak hour (07–11 / 12–14 / 15–17 / 18–20 / 21–23). No Sunday DO history — even split across 5 slots.",
       "pool_size": 13167,
       "sunday_peak_hour_assigned": 2181,
       "no_sunday_history_balanced": 10986,
@@ -13347,9 +13347,9 @@
     "campaigns": [
       {
         "id": "campaign_1",
-        "title": "Кампанія 1 · ранок",
+        "title": "Campaign 1 · morning",
         "time_label": "07:00–11:59",
-        "description": "Усі активні курʼєри Kyiv, розбиті на 5 кампаній. Курʼєри з неділечними доставками потрапляють сюди за типовою годиною DO (напр. 18:00 → 07:00–11:59). Решта — рівномірний розподіл без історії неділечних DO.",
+        "description": "All active Kyiv couriers split across 5 campaigns. Couriers with Sunday deliveries are assigned by typical DO hour (e.g. 18:00 → 07:00–11:59). Others are evenly distributed (no Sunday DO history).",
         "count": 2410,
         "courier_ids": [
           1118244,
@@ -15773,9 +15773,9 @@
       },
       {
         "id": "campaign_2",
-        "title": "Кампанія 2 · обід",
+        "title": "Campaign 2 · lunch",
         "time_label": "12:00–14:49",
-        "description": "Усі активні курʼєри Kyiv, розбиті на 5 кампаній. Курʼєри з неділечними доставками потрапляють сюди за типовою годиною DO (напр. 18:00 → 12:00–14:49). Решта — рівномірний розподіл без історії неділечних DO.",
+        "description": "All active Kyiv couriers split across 5 campaigns. Couriers with Sunday deliveries are assigned by typical DO hour (e.g. 18:00 → 12:00–14:49). Others are evenly distributed (no Sunday DO history).",
         "count": 2711,
         "courier_ids": [
           1688125,
@@ -18500,9 +18500,9 @@
       },
       {
         "id": "campaign_3",
-        "title": "Кампанія 3 · день",
+        "title": "Campaign 3 · afternoon",
         "time_label": "15:00–17:59",
-        "description": "Усі активні курʼєри Kyiv, розбиті на 5 кампаній. Курʼєри з неділечними доставками потрапляють сюди за типовою годиною DO (напр. 18:00 → 15:00–17:59). Решта — рівномірний розподіл без історії неділечних DO.",
+        "description": "All active Kyiv couriers split across 5 campaigns. Couriers with Sunday deliveries are assigned by typical DO hour (e.g. 18:00 → 15:00–17:59). Others are evenly distributed (no Sunday DO history).",
         "count": 2861,
         "courier_ids": [
           1898252,
@@ -21377,9 +21377,9 @@
       },
       {
         "id": "campaign_4",
-        "title": "Кампанія 4 · вечір",
+        "title": "Campaign 4 · evening",
         "time_label": "18:00–20:59",
-        "description": "Усі активні курʼєри Kyiv, розбиті на 5 кампаній. Курʼєри з неділечними доставками потрапляють сюди за типовою годиною DO (напр. 18:00 → 18:00–20:59). Решта — рівномірний розподіл без історії неділечних DO.",
+        "description": "All active Kyiv couriers split across 5 campaigns. Couriers with Sunday deliveries are assigned by typical DO hour (e.g. 18:00 → 18:00–20:59). Others are evenly distributed (no Sunday DO history).",
         "count": 2817,
         "courier_ids": [
           2138048,
@@ -24210,9 +24210,9 @@
       },
       {
         "id": "campaign_5",
-        "title": "Кампанія 5 · пізній вечір",
+        "title": "Campaign 5 · late evening",
         "time_label": "21:00–23:59",
-        "description": "Усі активні курʼєри Kyiv, розбиті на 5 кампаній. Курʼєри з неділечними доставками потрапляють сюди за типовою годиною DO (напр. 18:00 → 21:00–23:59). Решта — рівномірний розподіл без історії неділечних DO.",
+        "description": "All active Kyiv couriers split across 5 campaigns. Couriers with Sunday deliveries are assigned by typical DO hour (e.g. 18:00 → 21:00–23:59). Others are evenly distributed (no Sunday DO history).",
         "count": 2368,
         "courier_ids": [
           2138071,
