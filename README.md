@@ -2,6 +2,8 @@
 
 Інтерактивний звіт по **патернах роботи курʼєрів Kyiv у вихідні** (субота / неділя) за останні 4 тижні.
 
+**Live dashboard:** https://nataliiamalakova.github.io/Rain_Performance/
+
 ## Період
 
 - **Суботи:** 2026-05-10, 2026-05-17, 2026-05-24, 2026-05-31
@@ -68,4 +70,6 @@ cd "/Users/nataliia.malakovabolt.eu/Downloads/Session with Jakub H./Rain_Perform
 
 ## GitHub Pages
 
-Відкрийте `index.html` локально або опублікуйте гілку `main` через GitHub Pages.
+Live: **https://nataliiamalakova.github.io/Rain_Performance/** (гілка `main`, root).
+
+Після `build_report.py` зробіть `git push` — сторінка оновиться за ~1 хв.
