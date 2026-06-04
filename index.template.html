@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rain Performance · Kyiv weekend cohorts</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c2129;
+    --line: #2a313c;
+    --text: #e6edf3;
+    --muted: #8b96a3;
+    --accent: #4f9dff;
+    --accent-2: #7ee787;
+  }
+  * { box-sizing: border-box; }
+  html, body { background: var(--bg); color: var(--text); margin: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter",
+                 "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.55;
+    padding: 28px 32px 72px;
+    max-width: 1200px;
+  }
+  h1 { font-size: 22px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; max-width: 820px; }
+  .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .meta {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .meta .label {
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .meta .value { font-size: 18px; font-weight: 600; margin-top: 4px; }
+  .section-title {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 0 0 12px;
+  }
+  .cohorts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 14px;
+  }
+  .cohort {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 18px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .cohort-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .cohort h2 {
+    font-size: 16px;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .count {
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .desc { color: var(--muted); font-size: 13px; margin: 0; }
+  .metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .metric {
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+  .metric .k {
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .metric .v { font-size: 15px; font-weight: 600; margin-top: 2px; }
+  .windows {
+    font-size: 12px;
+    color: var(--muted);
+    border-top: 1px solid var(--line);
+    padding-top: 10px;
+  }
+  .windows strong { color: var(--text); font-weight: 600; }
+  .actions { margin-top: auto; padding-top: 4px; }
+  .btn {
+    appearance: none;
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    transition: background 0.15s, color 0.15s;
+  }
+  .btn:hover { background: var(--accent); color: #0b1117; }
+  .btn:active { opacity: 0.85; }
+  .footnote {
+    margin-top: 28px;
+    color: var(--muted);
+    font-size: 12px;
+    max-width: 820px;
+  }
+</style>
+</head>
+<body>
+  <h1>Rain Performance · Когорти вихідних (Kyiv)</h1>
+  <p class="sub" id="subtitle"></p>
+
+  <div class="meta-grid" id="meta-grid"></div>
+
+  <p class="section-title">Когорти за патерном роботи у вихідні</p>
+  <div class="cohorts" id="cohorts"></div>
+
+  <p class="footnote" id="footnote"></p>
+
+<script id="report-data" type="application/json">__REPORT_DATA__</script>
+<script>
+const DATA = JSON.parse(document.getElementById("report-data").textContent);
+const { meta, cohorts, cohort_order } = DATA;
+
+function pct(n, total) {
+  if (!total) return "0%";
+  return (100 * n / total).toFixed(1) + "%";
+}
+
+function downloadCsv(cohort) {
+  const rows = ["courier_id", ...cohort.courier_ids.map(String)];
+  const blob = new Blob([rows.join("\n") + "\n"], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `kyiv_weekend_${cohort.id}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById("subtitle").textContent =
+  `${meta.city} · ${meta.period_label} · ${meta.total_couriers.toLocaleString()} активних курʼєрів з W23 CSV · ` +
+  `4 суботи (${meta.weekend_saturdays.join(", ")}) · 4 неділі (${meta.weekend_sundays.join(", ")})`;
+
+const metaItems = [
+  ["Курʼєрів у вибірці", meta.total_couriers.toLocaleString()],
+  ["Поріг «зазвичай»", `≥${meta.regular_threshold_weeks} з 4 вихідних`],
+  ["Джерело онлайн / DO", "fact_courier_daily_v2"],
+  ["Джерело годин доставки", "fact_order_delivery · HOUR(order_created_at_local)"],
+];
+const metaGrid = document.getElementById("meta-grid");
+metaItems.forEach(([label, value]) => {
+  const el = document.createElement("div");
+  el.className = "meta";
+  el.innerHTML = `<div class="label">${label}</div><div class="value">${value}</div>`;
+  metaGrid.appendChild(el);
+});
+
+const byId = Object.fromEntries(cohorts.map(c => [c.id, c]));
+const root = document.getElementById("cohorts");
+
+cohort_order.forEach(id => {
+  const c = byId[id];
+  if (!c) return;
+  const s = c.summary;
+  const card = document.createElement("article");
+  card.className = "cohort";
+  card.innerHTML = `
+    <div class="cohort-head">
+      <h2>${c.title}</h2>
+      <span class="count">${c.count.toLocaleString()} · ${pct(c.count, meta.total_couriers)}</span>
+    </div>
+    <p class="desc">${c.description}</p>
+    <div class="metrics">
+      <div class="metric">
+        <div class="k">Субота · online h (avg)</div>
+        <div class="v">${s.avg_sat_online_hours}</div>
+      </div>
+      <div class="metric">
+        <div class="k">Неділя · online h (avg)</div>
+        <div class="v">${s.avg_sun_online_hours}</div>
+      </div>
+      <div class="metric">
+        <div class="k">Субота · DO (avg)</div>
+        <div class="v">${s.avg_sat_delivered_orders}</div>
+      </div>
+      <div class="metric">
+        <div class="k">Неділя · DO (avg)</div>
+        <div class="v">${s.avg_sun_delivered_orders}</div>
+      </div>
+    </div>
+    <div class="windows">
+      <div><strong>Доставки в суботу:</strong> ${s.with_sat_deliveries.toLocaleString()} курʼєрів${
+        s.typical_sat_delivery_window
+          ? ` · типові вікна: ${s.typical_sat_delivery_window}`
+          : ""
+      }</div>
+      <div style="margin-top:4px"><strong>Доставки в неділю:</strong> ${s.with_sun_deliveries.toLocaleString()} курʼєрів${
+        s.typical_sun_delivery_window
+          ? ` · типові вікна: ${s.typical_sun_delivery_window}`
+          : ""
+      }</div>
+    </div>
+    <div class="actions">
+      <button class="btn" type="button">Завантажити courier_id (.csv)</button>
+    </div>
+  `;
+  card.querySelector(".btn").addEventListener("click", () => downloadCsv(c));
+  root.appendChild(card);
+});
+
+document.getElementById("footnote").textContent =
+  `${meta.active_definition} ${meta.delivery_window_note}`;
+</script>
+</body>
+</html>
